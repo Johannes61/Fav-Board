@@ -23,11 +23,8 @@
       const afterEl = getDragAfterElement(gridEl, e.clientY, e.clientX);
       const draggingEl = gridEl.querySelector(`[data-id="${draggingId}"]`);
       if (!draggingEl) return;
-      if (afterEl == null) {
-        gridEl.appendChild(draggingEl);
-      } else {
-        gridEl.insertBefore(draggingEl, afterEl);
-      }
+      if (afterEl == null) gridEl.appendChild(draggingEl);
+      else gridEl.insertBefore(draggingEl, afterEl);
     });
 
     gridEl.addEventListener('drop', (e) => {

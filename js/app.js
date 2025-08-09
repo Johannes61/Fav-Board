@@ -142,21 +142,13 @@
   }
 
   /* -------- Helpers -------- */
-  function ensureProtocol(url) {
-    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
-  }
-  function parseTags(str) {
-    if (!str) return [];
-    return str.split(',').map(s => s.trim()).filter(Boolean);
-  }
+  function ensureProtocol(url) { return /^https?:\/\//i.test(url) ? url : `https://${url}`; }
+  function parseTags(str) { return str ? str.split(',').map(s => s.trim()).filter(Boolean) : []; }
   function filterMatches(item, query) {
     if (!query) return true;
     const q = query.toLowerCase().trim();
-
-    // Tag search: #tag
     const tagQueries = q.split(/\s+/).filter(t => t.startsWith('#')).map(t => t.slice(1));
     const textQueries = q.split(/\s+/).filter(t => !t.startsWith('#'));
-
     const textBlob = `${item.name} ${item.url} ${item.tags.join(' ')}`.toLowerCase();
     const textOk = textQueries.every(t => textBlob.includes(t));
     const tagOk = tagQueries.every(t => item.tags.map(s => s.toLowerCase()).includes(t));
@@ -321,17 +313,11 @@
   }
 
   /* -------- Theme & density -------- */
-  function applyTheme(t) {
-    document.documentElement.classList.toggle('theme-deepblue', t === 'deepblue');
-  }
-  function applyDensity(d) {
-    document.documentElement.classList.toggle('density-compact', d === 'compact');
-  }
+  function applyTheme(t) { document.documentElement.classList.toggle('theme-deepblue', t === 'deepblue'); }
+  function applyDensity(d) { document.documentElement.classList.toggle('density-compact', d === 'compact'); }
 
   /* -------- Utils -------- */
-  function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
+  function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   document.addEventListener('DOMContentLoaded', init);
 })();
