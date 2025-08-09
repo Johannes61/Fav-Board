@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FavBoard</title>
+  <link rel="stylesheet" href="./css/styles.css?v=1" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>FavBoard</h1>
+      <div class="muted">Your fast, pretty startboard</div>
+    </div>
+    <div class="tools">
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search name, URL, or #tag…  (Press /)" />
+      </div>
+      <select id="density">
+        <option value="comfort">Comfortable</option>
+        <option value="compact">Compact</option>
+      </select>
+      <select id="theme">
+        <option value="light">Light</option>
+        <option value="deepblue">Deep Blue</option>
+      </select>
+      <button id="openAll" class="ghost">Open all</button>
+      <button id="exportBtn">Export</button>
+      <label class="import-label">Import
+        <input type="file" id="importFile" accept=".json" />
+      </label>
+      <button id="wipeBtn" class="danger">Wipe</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="add-panel">
+      <form id="addForm" autocomplete="off">
+        <input id="siteName" placeholder="Name (e.g., VG)" required />
+        <input id="siteUrl" placeholder="URL (vg.no or https://vg.no)" required />
+        <input id="siteTags" placeholder="Tags (comma separated, e.g., news,work)" />
+        <button type="submit">Add</button>
+      </form>
+      <div class="hint muted">Tip: Use tags like <code>news</code>, <code>docs</code>. Search with <code>#news</code>.</div>
+    </section>
+
+    <section class="grid-wrap">
+      <div id="cards" class="cards-grid empty">
+        <div class="empty-state">
+          No sites yet. Add some above ✨
+        </div>
+      </div>
+    </section>
+
+    <section id="profile" class="profile-section">
+      <div class="profile-banner"></div>
+      <div class="profile-card">
+        <img id="meAvatar" alt="avatar" />
+        <div class="profile-info">
+          <div class="profile-name">Built by <a href="https://github.com/Johannes61" target="_blank" rel="noreferrer">@Johannes61</a></div>
+          <div class="profile-badges">
+            <span class="chip">Frontend-only</span>
+            <span class="chip">LocalStorage</span>
+            <span class="chip">No backend</span>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <a href="https://github.com/Johannes61" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./js/storage.js?v=1" defer></script>
+  <script src="./js/dragdrop.js?v=1" defer></script>
+  <script src="./js/app.js?v=1" defer></script>
+</body>
+</html>
