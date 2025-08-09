@@ -1,20 +1,21 @@
 (function () {
-  const STORE_KEY = 'favboard:v1';
+  const STORE_KEY = 'favboard:v2';
 
   const Storage = {
     load() {
       try {
         const raw = localStorage.getItem(STORE_KEY);
-        if (!raw) return { theme: 'light', density: 'comfort', items: [], order: [] };
+        if (!raw) return { theme: 'light', density: 'comfort', sort: 'custom', items: [], order: [] };
         const d = JSON.parse(raw);
         return {
           theme: d.theme || 'light',
           density: d.density || 'comfort',
+          sort: d.sort || 'custom',          // NEW
           items: Array.isArray(d.items) ? d.items : [],
           order: Array.isArray(d.order) ? d.order : [],
         };
       } catch {
-        return { theme: 'light', density: 'comfort', items: [], order: [] };
+        return { theme: 'light', density: 'comfort', sort: 'custom', items: [], order: [] };
       }
     },
     save(data) {

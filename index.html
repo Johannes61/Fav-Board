@@ -4,27 +4,41 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>FavBoard</title>
-  <link rel="stylesheet" href="./css/styles.css?v=1" />
+  <link rel="stylesheet" href="./css/styles.css?v=2" />
 </head>
 <body>
+  <!-- Inset, rounded, sticky header -->
   <header class="app-header">
     <div class="brand">
       <h1>FavBoard</h1>
       <div class="muted">Your fast, pretty startboard</div>
     </div>
+
     <div class="tools">
       <div class="search-wrap">
         <input id="search" type="search" placeholder="Search name, URL, or #tag…  (Press /)" />
       </div>
-      <select id="density">
+
+      <select id="sortMode" title="Sort">
+        <option value="custom">Sort: Custom</option>
+        <option value="name">Sort: Name</option>
+        <option value="created">Sort: Created</option>
+      </select>
+
+      <select id="density" title="Density">
         <option value="comfort">Comfortable</option>
         <option value="compact">Compact</option>
       </select>
-      <select id="theme">
+
+      <select id="theme" title="Theme">
         <option value="light">Light</option>
         <option value="deepblue">Deep Blue</option>
       </select>
+
       <button id="openAll" class="ghost">Open all</button>
+      <button id="shareBtn" title="Share this board via link">Share Link</button>
+      <a id="bookmarklet" class="ghost" href="#" title="Drag to bookmarks">Bookmarklet</a>
+
       <button id="exportBtn">Export</button>
       <label class="import-label">Import
         <input type="file" id="importFile" accept=".json" />
@@ -41,14 +55,14 @@
         <input id="siteTags" placeholder="Tags (comma separated, e.g., news,work)" />
         <button type="submit">Add</button>
       </form>
-      <div class="hint muted">Tip: Use tags like <code>news</code>, <code>docs</code>. Search with <code>#news</code>.</div>
+      <div class="hint muted">
+        Tip: Click any <strong>#tag</strong> chip to filter. Use <code>/</code> to focus search, <code>n</code> to quick-add.
+      </div>
     </section>
 
     <section class="grid-wrap">
       <div id="cards" class="cards-grid empty">
-        <div class="empty-state">
-          No sites yet. Add some above ✨
-        </div>
+        <div class="empty-state">No sites yet. Add some above ✨</div>
       </div>
     </section>
 
@@ -71,8 +85,8 @@
     </section>
   </main>
 
-  <script src="./js/storage.js?v=1" defer></script>
-  <script src="./js/dragdrop.js?v=1" defer></script>
-  <script src="./js/app.js?v=1" defer></script>
+  <script src="./js/storage.js?v=2" defer></script>
+  <script src="./js/dragdrop.js?v=2" defer></script>
+  <script src="./js/app.js?v=2" defer></script>
 </body>
 </html>

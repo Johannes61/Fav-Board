@@ -5,33 +5,44 @@
 
   const { Storage, DnD } = window.FavBoard;
 
-  const state = Storage.load(); // { theme, density, items:[{id,name,url,tags[],pin}], order:[ids] }
+  // State: { theme, density, sort, items:[{id,name,url,tags[],pin,created}], order:[ids] }
+  const state = Storage.load();
   const $ = (q) => document.querySelector(q);
   const $$ = (q) => Array.from(document.querySelectorAll(q));
   const uid = () => Math.random().toString(36).slice(2, 10);
+  const APP_URL = window.location.origin + window.location.pathname;
 
   function init() {
     // Theme & density
     applyTheme(state.theme);
     applyDensity(state.density);
+
     $('#theme').value = state.theme;
     $('#density').value = state.density;
+    $('#sortMode').value = state.sort;
 
     $('#theme').addEventListener('change', () => {
       state.theme = $('#theme').value;
-      Storage.save(state);
-      applyTheme(state.theme);
+      Storage.save(state); applyTheme(state.theme);
     });
     $('#density').addEventListener('change', () => {
       state.density = $('#density').value;
-      Storage.save(state);
-      applyDensity(state.density);
+      Storage.save(state); applyDensity(state.density);
+    });
+    $('#sortMode').addEventListener('change', () => {
+      state.sort = $('#sortMode').value;
+      Storage.save(state); render();
     });
 
     // Controls
     $('#openAll').addEventListener('click', openAllFiltered);
     $('#exportBtn').addEventListener('click', doExport);
     $('#importFile').addEventListener('change', doImport);
+    $('#shareBtn').addEventListener('click', shareLink);
+
+    // Bookmarklet (drag this to bookmarks)
+    $('#bookmarklet').href = makeBookmarklet();
+
     $('#wipeBtn').addEventListener('click', () => {
       if (!confirm('Wipe all data?')) return;
       Storage.wipe();
@@ -43,11 +54,9 @@
     $('#search').addEventListener('input', render);
     window.addEventListener('keydown', (e) => {
       if (e.key === '/' && (document.activeElement.tagName !== 'INPUT')) {
-        e.preventDefault();
-        $('#search').focus();
+        e.preventDefault(); $('#search').focus();
       } else if (e.key.toLowerCase() === 'n' && (document.activeElement.tagName !== 'INPUT')) {
-        e.preventDefault();
-        $('#siteName').focus();
+        e.preventDefault(); $('#siteName').focus();
       }
     });
 
@@ -57,38 +66,79 @@
       const name = $('#siteName').value.trim();
       let url = $('#siteUrl').value.trim();
       const tagsRaw = $('#siteTags').value.trim();
-
       if (!name || !url) return;
       url = ensureProtocol(url);
-
-      const item = {
-        id: uid(),
-        name,
-        url,
-        tags: parseTags(tagsRaw),
-        pin: false,
-        created: Date.now()
-      };
+      const item = { id: uid(), name, url, tags: parseTags(tagsRaw), pin: false, created: Date.now() };
       state.items.push(item);
       state.order.push(item.id);
       Storage.save(state);
-
-      $('#siteName').value = '';
-      $('#siteUrl').value = '';
-      $('#siteTags').value = '';
-
+      $('#siteName').value = ''; $('#siteUrl').value = ''; $('#siteTags').value = '';
       render();
     });
 
     // Prefill profile avatar
     const meAvatar = $('#meAvatar');
-    meAvatar.src = 'https://avatars.githubusercontent.com/u/9919?v=4'; // fallback generic GH mark
+    meAvatar.src = 'https://avatars.githubusercontent.com/u/9919?v=4'; // fallback GH mark
     fetch('https://api.github.com/users/Johannes61')
       .then(r => r.ok ? r.json() : null)
       .then(u => { if (u?.avatar_url) meAvatar.src = u.avatar_url; })
       .catch(()=>{});
 
+    // Load from URL hash (share link or quick-add)
+    processHash();
+    window.addEventListener('hashchange', processHash);
+
     render();
+  }
+
+  /* -------- Hash features (Share / Quick-add) -------- */
+  function processHash() {
+    const h = decodeURIComponent(location.hash || '');
+    // #data=<base64>
+    if (h.startsWith('#data=')) {
+      try {
+        const json = atob(h.slice(6));
+        const parsed = JSON.parse(json);
+        if (parsed && Array.isArray(parsed.items) && Array.isArray(parsed.order)) {
+          Object.assign(state, { ...state, ...parsed });
+          Storage.save(state);
+          render();
+        }
+      } catch {}
+      history.replaceState(null, '', APP_URL);
+    }
+    // #add=&t=
+    if (h.startsWith('#add=')) {
+      try {
+        const url = new URLSearchParams(h.slice(1)).get('add');
+        const title = new URLSearchParams(h.slice(1)).get('t') || url;
+        if (url) {
+          const item = { id: uid(), name: title, url: ensureProtocol(url), tags: [], pin:false, created: Date.now() };
+          state.items.push(item); state.order.push(item.id); Storage.save(state); render();
+        }
+      } catch {}
+      history.replaceState(null, '', APP_URL);
+    }
+  }
+
+  function shareLink() {
+    const payload = {
+      theme: state.theme,
+      density: state.density,
+      sort: state.sort,
+      items: state.items,
+      order: state.order
+    };
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const url = APP_URL + '#data=' + b64;
+    navigator.clipboard?.writeText(url).catch(()=>{});
+    alert('Share link copied to clipboard.\n\nAnyone opening it will load your board (frontend-only).');
+  }
+
+  function makeBookmarklet() {
+    // Opens this FavBoard and pre-fills “Add” with the current page
+    const app = APP_URL.replace(/'/g, "\\'");
+    return "javascript:(function(){var t=document.title||'',u=location.href;location.href='"+app+"#add='+encodeURIComponent(u)+'&t='+encodeURIComponent(t);})();";
   }
 
   /* -------- Helpers -------- */
@@ -108,19 +158,13 @@
     const textQueries = q.split(/\s+/).filter(t => !t.startsWith('#'));
 
     const textBlob = `${item.name} ${item.url} ${item.tags.join(' ')}`.toLowerCase();
-
     const textOk = textQueries.every(t => textBlob.includes(t));
     const tagOk = tagQueries.every(t => item.tags.map(s => s.toLowerCase()).includes(t));
     return textOk && tagOk;
   }
   function faviconFor(url) {
-    // Use DuckDuckGo IP3 favicon proxy for reliability (HTTPS + CORS)
-    try {
-      const u = new URL(url);
-      return `https://icons.duckduckgo.com/ip3/${u.hostname}.ico`;
-    } catch {
-      return `https://icons.duckduckgo.com/ip3/${url.replace(/^https?:\/\//,'')}.ico`;
-    }
+    try { const u = new URL(url); return `https://icons.duckduckgo.com/ip3/${u.hostname}.ico`; }
+    catch { return `https://icons.duckduckgo.com/ip3/${url.replace(/^https?:\/\//,'')}.ico`; }
   }
 
   /* -------- Rendering -------- */
@@ -128,21 +172,30 @@
     const cards = $('#cards');
     cards.innerHTML = '';
 
-    // Filter + sort: pinned first, then by order
     const q = $('#search').value || '';
-    const byId = new Map(state.items.map(i => [i.id, i]));
-    const ordered = state.order.map(id => byId.get(id)).filter(Boolean);
 
+    // Map and base ordering
+    const byId = new Map(state.items.map(i => [i.id, i]));
+    let ordered = state.order.map(id => byId.get(id)).filter(Boolean);
+
+    // Sort modes (pin always takes precedence visually)
+    if (state.sort === 'name') {
+      ordered.sort((a,b) => a.name.localeCompare(b.name));
+    } else if (state.sort === 'created') {
+      ordered.sort((a,b) => (a.created||0) - (b.created||0));
+    } // else "custom": keep saved order
+
+    // Filter
     const filtered = ordered.filter(i => filterMatches(i, q));
+
+    // Pinned first visually
     const pinned = filtered.filter(i => i.pin);
     const others = filtered.filter(i => !i.pin);
     const finalList = [...pinned, ...others];
 
     if (finalList.length === 0) {
       cards.classList.add('empty');
-      cards.innerHTML = `
-        <div class="empty-state">No matches. Try clearing the search, or add a site.</div>
-      `;
+      cards.innerHTML = `<div class="empty-state">No matches. Try clearing the search, or add a site.</div>`;
     } else {
       cards.classList.remove('empty');
       for (const item of finalList) {
@@ -150,10 +203,8 @@
       }
     }
 
-    // Enable drag-drop reordering (affects current filtered order):
+    // DnD: write back order from DOM when drop completes (respects current filter)
     DnD.makeGridDroppable(cards, onReorderFromDom);
-
-    // Make each card draggable
     $$('.card').forEach(el => DnD.makeDraggable(el));
   }
 
@@ -162,7 +213,7 @@
     card.className = 'card';
     card.dataset.id = item.id;
 
-    const tagsHtml = item.tags.map(t => `<span class="chip">#${escapeHtml(t)}</span>`).join('');
+    const tagsHtml = item.tags.map(t => `<span class="chip" data-chip="${escapeHtml(t)}">#${escapeHtml(t)}</span>`).join('');
     const fav = faviconFor(item.url);
 
     card.innerHTML = `
@@ -188,39 +239,48 @@
       </div>
     `;
 
+    // Actions
     card.querySelector('[data-act="open"]').addEventListener('click', () => {
       window.open(item.url, '_blank', 'noopener,noreferrer');
     });
     card.querySelector('[data-act="pin"]').addEventListener('click', () => {
-      item.pin = !item.pin;
-      Storage.save(state);
-      render();
+      item.pin = !item.pin; Storage.save(state); render();
     });
     card.querySelector('[data-act="edit"]').addEventListener('click', () => {
       const newName = prompt('Name', item.name); if (newName === null) return;
       const newUrl  = prompt('URL', item.url);  if (newUrl === null) return;
       const newTags = prompt('Tags (comma separated)', item.tags.join(', ')); if (newTags === null) return;
-      item.name = newName.trim() || item.name;
-      item.url  = ensureProtocol((newUrl.trim() || item.url));
+      item.name = (newName.trim() || item.name);
+      item.url  = ensureProtocol(newUrl.trim() || item.url);
       item.tags = parseTags(newTags);
-      Storage.save(state);
-      render();
+      Storage.save(state); render();
     });
     card.querySelector('[data-act="delete"]').addEventListener('click', () => {
       if (!confirm('Delete this site?')) return;
       state.items = state.items.filter(i => i.id !== item.id);
       state.order = state.order.filter(id => id !== item.id);
-      Storage.save(state);
-      render();
+      Storage.save(state); render();
+    });
+
+    // Chip → filter
+    card.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const tag = chip.dataset.chip || '';
+        if (!tag) return;
+        const cur = ($('#search').value || '').trim();
+        const parts = cur.split(/\s+/).filter(Boolean);
+        if (!parts.includes('#'+tag)) parts.push('#'+tag);
+        $('#search').value = parts.join(' ');
+        render();
+      });
     });
 
     return card;
   }
 
-  // After a drag-drop completes, read DOM order and rebuild state.order:
+  // Read DOM order and persist
   function onReorderFromDom() {
     const ids = $$('#cards .card').map(el => el.dataset.id);
-    // Keep pinned first in the saved order as they appear in DOM
     state.order = ids;
     Storage.save(state);
   }
@@ -229,7 +289,9 @@
   function openAllFiltered() {
     const q = $('#search').value || '';
     const byId = new Map(state.items.map(i => [i.id, i]));
-    const ordered = state.order.map(id => byId.get(id)).filter(Boolean);
+    let ordered = state.order.map(id => byId.get(id)).filter(Boolean);
+    if (state.sort === 'name') ordered = ordered.sort((a,b) => a.name.localeCompare(b.name));
+    else if (state.sort === 'created') ordered = ordered.sort((a,b) => (a.created||0) - (b.created||0));
     const filtered = ordered.filter(i => filterMatches(i, q));
     filtered.forEach(i => window.open(i.url, '_blank', 'noopener,noreferrer'));
   }
@@ -248,6 +310,7 @@
       Object.assign(state, d);
       applyTheme(state.theme);
       applyDensity(state.density);
+      $('#sortMode').value = state.sort;
       render();
       alert('Imported.');
     } catch (err) {

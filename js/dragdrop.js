@@ -37,19 +37,15 @@
     });
   }
 
-  // Approximate "closest next element" in a CSS grid by vertical proximity, then horizontal
+  // Approximate "closest next element" in a CSS grid
   function getDragAfterElement(container, y, x) {
     const els = [...container.querySelectorAll('.card:not(.dragging)')];
-
-    // Compute distance of each element's center to the cursor
-    let best = null;
-    let bestDist = Infinity;
+    let best = null, bestDist = Infinity;
     for (const el of els) {
       const r = el.getBoundingClientRect();
       const cx = r.left + r.width / 2;
       const cy = r.top + r.height / 2;
-      const dy = cy - y, dx = cx - x;
-      const dist = Math.hypot(dx, dy);
+      const dist = Math.hypot(cx - x, cy - y);
       if (dist < bestDist) { bestDist = dist; best = el; }
     }
     return best;
